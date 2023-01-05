@@ -1,0 +1,8 @@
+[
+  {
+    "id": "token",
+    "label": "Kanojo API Token",
+    "type": "text",
+    "default": ""
+  }
+]
