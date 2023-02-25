@@ -128,10 +128,11 @@ def PerformKanojoMovieSearch(results, media, lang):
 
         if isinstance(kanojo_dict, dict) and 'data' in kanojo_dict:
             for _, movie in enumerate(kanojo_dict['data']):
-                score = 90
+                score = 100
+                # Multiply the Levenshtein Distance by 10 to account for how short product codes are.
                 score = score - \
                     abs(String.LevenshteinDistance(
-                        movie['product_code'].lower(), media.name.replace(' ', '-').lower()))
+                        movie['product_code'].lower(), media.name.replace(' ', '-').lower())) * 10
 
                 if 'release_date' in movie and movie['release_date']:
                     release_year = int(movie['release_date'].split('-')[0])
@@ -154,7 +155,7 @@ def PerformKanojoMovieSearch(results, media, lang):
 
                     AppendSearchResult(results=results,
                                         id=id,
-                                        name=movie['title']['jp'],
+                                        name="[{0}] {1}".format(movie['product_code'], movie['title']['ja-JP']),
                                         year=release_year,
                                         score=score,
                                         lang=lang)
@@ -181,10 +182,10 @@ def PerformKanojoMovieUpdate(metadata_id, lang, existing_metadata):
         metadata['audience_rating_image'] = None
 
     # Title of the film.
-    metadata['title'] = kanojo_dict.get('title')
+    metadata['title'] = kanojo_dict.get('title')['ja-JP']
 
-    if 'original_title' in kanojo_dict and kanojo_dict['original_title'] != metadata['title']:
-        metadata['original_title'] = kanojo_dict['original_title']
+    #if 'original_title' in kanojo_dict and kanojo_dict['original_title'] != metadata['title']:
+    #    metadata['original_title'] = kanojo_dict['original_title']
 
     # Release date.
     try:
