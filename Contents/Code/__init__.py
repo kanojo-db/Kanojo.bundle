@@ -1,4 +1,4 @@
-KANOJO_BASE_URL = 'http://127.0.0.1/api%s'
+KANOJO_BASE_URL = 'https://kanojodb.com/api%s'
 
 # Movies
 KANOJO_MOVIE_SEARCH = '/search/movie?query=%s'
@@ -266,7 +266,7 @@ def PerformKanojoMovieUpdate(metadata_id, lang, existing_metadata):
 class KanojoAgent(Agent.Movies):
 
     name = 'Kanojo'
-    languages = [Locale.Language.English]
+    languages = [Locale.Language.Japanese]
     primary_provider = True
     accepts_from = ['com.plexapp.agents.localmedia']
 
