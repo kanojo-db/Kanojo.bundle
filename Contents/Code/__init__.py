@@ -22,7 +22,7 @@ def Start():
 ####################################################################################################
 
 
-def GetKanojoJSON(url, cache_time=CACHE_1MONTH):
+def GetKanojoJSON(url, cache_time=CACHE_1HOUR):
   kanojo_dict = None
 
   try:
@@ -182,10 +182,10 @@ def PerformKanojoMovieUpdate(metadata_id, lang, existing_metadata):
         metadata['audience_rating_image'] = None
 
     # Title of the film.
-    metadata['title'] = kanojo_dict.get('title')['ja-JP']
+    metadata['title'] = metadata['title'] = kanojo_dict.get('title')
 
-    #if 'original_title' in kanojo_dict and kanojo_dict['original_title'] != metadata['title']:
-    #    metadata['original_title'] = kanojo_dict['original_title']
+    if 'original_title' in kanojo_dict and kanojo_dict['original_title'] != metadata['title']:
+        metadata['original_title'] = kanojo_dict['original_title']
 
     # Release date.
     try:
@@ -241,7 +241,7 @@ def PerformKanojoMovieUpdate(metadata_id, lang, existing_metadata):
         for member in kanojo_dict.get('cast') or list():
             try:
                 role = dict()
-                # Since models basically alwways play themselves, we'll use their age as the role.
+                # Since models basically always play themselves, we'll use their age as the role.
                 role['role'] = member['age_text']
                 role['name'] = member['name']
                 if member['profile_path'] is not None:
@@ -256,7 +256,8 @@ def PerformKanojoMovieUpdate(metadata_id, lang, existing_metadata):
     metadata['posters'][kanojo_dict['poster_path']] = Proxy.Media(HTTP.Request(kanojo_dict['poster_path']).content)
 
     # Backdrops.
-    metadata['art'] = {}
+    metadata['art'] = dict()
+    metadata['art'][kanojo_dict['backdrop_path']] = Proxy.Media(HTTP.Request(kanojo_dict['backdrop_path']).content)
 
     return metadata
 
