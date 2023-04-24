@@ -26,7 +26,7 @@ def GetKanojoJSON(url, cache_time=CACHE_1HOUR):
   kanojo_dict = None
 
   try:
-    kanojo_dict = JSON.ObjectFromURL(KANOJO_BASE_URL % url, sleep=2.0, headers={'Accept': 'application/json'}, cacheTime=cache_time)
+    kanojo_dict = JSON.ObjectFromURL(KANOJO_BASE_URL % url, sleep=2.0, headers={'Accept': 'application/json', 'Authorization': 'Bearer {}'.format(Prefs['token'])}, cacheTime=cache_time)
   except Exception as e:
     Log('Error fetching JSON from Kanojo: %s' % (KANOJO_BASE_URL % url))
     Log(e)
