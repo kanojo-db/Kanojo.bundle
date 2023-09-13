@@ -4,5 +4,11 @@
     "label": "Kanojo API Token",
     "type": "text",
     "default": ""
+  },
+  {
+    "id": "collections",
+    "label": "Use series info from Kanojo",
+    "type": "bool",
+    "default": "true"
   }
 ]

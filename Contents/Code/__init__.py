@@ -207,7 +207,7 @@ def PerformKanojoMovieUpdate(metadata_id, lang, existing_metadata):
 
     # Collections.
     metadata['collections'] = []
-    if Prefs['collections'] and isinstance(kanojo_dict.get('belongs_to_series', None), dict):
+    if Prefs['collections'] and 'belongs_to_series' in kanojo_dict and kanojo_dict['belongs_to_series'] != None:
         metadata['collections'].append(kanojo_dict['belongs_to_series'])
 
     # Studio.

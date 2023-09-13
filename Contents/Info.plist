@@ -3,7 +3,7 @@
 <plist version="1.0">
 	<dict>
 		<key>CFBundleIdentifier</key>
-		<string>eu.kanojo.agent</string>
+		<string>com.kanojodb.agent</string>
 		<key>PlexFrameworkVersion</key>
 		<string>2</string>
 		<key>PlexPluginClass</key>
