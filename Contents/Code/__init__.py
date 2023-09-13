@@ -1,9 +1,8 @@
-KANOJO_BASE_URL = 'https://kanojodb.com/api%s'
+KANOJO_BASE_URL = 'https://api.kanojodb.com%s'
 
 # Movies
 KANOJO_MOVIE_SEARCH = '/search/movie?query=%s'
 KANOJO_MOVIE = '/movie/%s'
-KANOJO_MOVIE_IMAGES = '/movie/%s/images'
 
 ARTWORK_ITEM_LIMIT = 15
 # How much weight to give ratings vs. vote counts when picking best posters. 0 means use only ratings.
@@ -132,7 +131,7 @@ def PerformKanojoMovieSearch(results, media, lang):
                 # Multiply the Levenshtein Distance by 10 to account for how short product codes are.
                 score = score - \
                     abs(String.LevenshteinDistance(
-                        movie['product_code'].lower(), media.name.replace(' ', '-').lower())) * 10
+                        movie['product_code'].lower(), media.name.replace(' ', '-').lower())) * 50
 
                 if 'release_date' in movie and movie['release_date']:
                     release_year = int(movie['release_date'].split('-')[0])
@@ -155,7 +154,7 @@ def PerformKanojoMovieSearch(results, media, lang):
 
                     AppendSearchResult(results=results,
                                         id=id,
-                                        name="[{0}] {1}".format(movie['product_code'], movie['title']['ja-JP']),
+                                        name="[{0}] {1}".format(movie['product_code'], movie['original_title']),
                                         year=release_year,
                                         score=score,
                                         lang=lang)
@@ -207,10 +206,9 @@ def PerformKanojoMovieUpdate(metadata_id, lang, existing_metadata):
         metadata['genres'].append(genre.get('name', '').strip())
 
     # Collections.
-    # metadata['collections'] = []
-    # if Prefs['collections'] and isinstance(kanojo_dict.get('belongs_to_collection', None), dict):
-    #     metadata['collections'].append((kanojo_dict['belongs_to_collection'].get(
-    #         'name') or '').replace(' Collection', ''))
+    metadata['collections'] = []
+    if Prefs['collections'] and isinstance(kanojo_dict.get('belongs_to_series', None), dict):
+        metadata['collections'].append(kanojo_dict['belongs_to_series'])
 
     # Studio.
     if 'studios' in kanojo_dict and len(kanojo_dict['studios']) > 0:
