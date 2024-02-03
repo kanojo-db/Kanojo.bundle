@@ -1,8 +1,8 @@
-KANOJO_BASE_URL = 'https://api.kanojodb.com%s'
+KANOJO_BASE_URL = 'https://kanojodb.com%s'
 
 # Movies
-KANOJO_MOVIE_SEARCH = '/search/movie?query=%s'
-KANOJO_MOVIE = '/movie/%s'
+KANOJO_MOVIE_SEARCH = '/api/v1/search?q=%s'
+KANOJO_MOVIE = '/api/v1/movie/%s'
 
 ARTWORK_ITEM_LIMIT = 15
 # How much weight to give ratings vs. vote counts when picking best posters. 0 means use only ratings.
@@ -25,7 +25,7 @@ def GetKanojoJSON(url, cache_time=CACHE_1HOUR):
   kanojo_dict = None
 
   try:
-    kanojo_dict = JSON.ObjectFromURL(KANOJO_BASE_URL % url, sleep=2.0, headers={'Accept': 'application/json', 'Authorization': 'Bearer {}'.format(Prefs['token'])}, cacheTime=cache_time)
+    kanojo_dict = JSON.ObjectFromURL(KANOJO_BASE_URL % url, sleep=2.0, headers={'Accept': 'application/json'}, cacheTime=cache_time)
   except Exception as e:
     Log('Error fetching JSON from Kanojo: %s' % (KANOJO_BASE_URL % url))
     Log(e)
@@ -125,13 +125,13 @@ def PerformKanojoMovieSearch(results, media, lang):
         kanojo_dict = GetKanojoJSON(url=KANOJO_MOVIE_SEARCH % (
             media.name.replace(' ', '-')))
 
-        if isinstance(kanojo_dict, dict) and 'data' in kanojo_dict:
-            for _, movie in enumerate(kanojo_dict['data']):
+        if isinstance(kanojo_dict, list):
+            for _, movie in enumerate(kanojo_dict):
                 score = 100
                 # Multiply the Levenshtein Distance by 10 to account for how short product codes are.
                 score = score - \
                     abs(String.LevenshteinDistance(
-                        movie['product_code'].lower(), media.name.replace(' ', '-').lower())) * 50
+                        movie['dvd_id'].lower(), media.name.replace(' ', '-').lower())) * 50
 
                 if 'release_date' in movie and movie['release_date']:
                     release_year = int(movie['release_date'].split('-')[0])
@@ -150,11 +150,15 @@ def PerformKanojoMovieSearch(results, media, lang):
                 if score <= 0:
                     continue
                 else:
-                    id = movie['product_code']
+                    # If lang is English, get the English title, otherwise use the original title.
+                    if lang == Locale.Language.English:
+                        name = movie['original_title']
+                    else:
+                        name = movie['title']
 
                     AppendSearchResult(results=results,
-                                        id=id,
-                                        name="[{0}] {1}".format(movie['product_code'], movie['original_title']),
+                                        id=movie['id'],
+                                        name="[{0}] {1}".format(movie['dvd_id'], name),
                                         year=release_year,
                                         score=score,
                                         lang=lang)
@@ -172,16 +176,22 @@ def PerformKanojoMovieUpdate(metadata_id, lang, existing_metadata):
         return None
 
     # Rating.
-    votes = kanojo_dict.get('vote_count') or 0
-    rating = kanojo_dict.get('vote_average') or 0.0
-    if votes > 3:
-        metadata['rating'] = rating
-        metadata['audience_rating'] = 0.0
-        metadata['rating_image'] = None
-        metadata['audience_rating_image'] = None
+    # votes = kanojo_dict.get('vote_count') or 0
+    # rating = kanojo_dict.get('vote_average') or 0.0
+    # if votes > 3:
+    #    metadata['rating'] = rating
+    #    metadata['audience_rating'] = 0.0
+    #    metadata['rating_image'] = None
+    #    metadata['audience_rating_image'] = None
+
+    dvd_code = kanojo_dict.get('dvd_id')
 
     # Title of the film.
-    metadata['title'] = metadata['title'] = kanojo_dict.get('title')
+    if lang == Locale.Language.English:
+        # Title is [DVD Code] Title
+        metadata['title'] = '[%s] %s' % (dvd_code, kanojo_dict['title'])
+    else:
+        metadata['title'] = '[%s] %s' % (dvd_code, kanojo_dict['original_title'])
 
     if 'original_title' in kanojo_dict and kanojo_dict['original_title'] != metadata['title']:
         metadata['original_title'] = kanojo_dict['original_title']
@@ -201,30 +211,21 @@ def PerformKanojoMovieUpdate(metadata_id, lang, existing_metadata):
         pass
 
     # Genres.
-    metadata['genres'] = []
-    for genre in (kanojo_dict.get('genres') or list()):
-        metadata['genres'].append(genre.get('name', '').strip())
+    # metadata['genres'] = []
+    # for genre in (kanojo_dict.get('genres') or list()):
+    #    metadata['genres'].append(genre.get('name', '').strip())
 
     # Collections.
-    metadata['collections'] = []
-    if Prefs['collections'] and 'belongs_to_series' in kanojo_dict and kanojo_dict['belongs_to_series'] != None:
-        metadata['collections'].append(kanojo_dict['belongs_to_series'])
+    #metadata['collections'] = []
+    #if Prefs['collections'] and 'belongs_to_series' in kanojo_dict and kanojo_dict['belongs_to_series'] != None:
+    #    metadata['collections'].append(kanojo_dict['belongs_to_series'])
 
     # Studio.
-    if 'studios' in kanojo_dict and len(kanojo_dict['studios']) > 0:
-        try:
-            index = kanojo_dict['studios'][0]['id']
-        except:
-            index = ''  # All numbers are less than an empty string
-        company = None
-
-        for studio in kanojo_dict['studios']:
-            Log('Studio: %s' % studio)
-            if (studio.get('id') or '') <= index:  # All numbers are less than an empty string
-                index = studio['id']
-                company = studio['name'].strip()
-
-        metadata['studio'] = company
+    if 'studio' in kanojo_dict:
+        if lang == Locale.Language.English:
+            metadata['studio'] = kanojo_dict['studio']['name']
+        else:
+            metadata['studio'] = kanojo_dict['studio']['original_name']
 
     else:
         metadata['studio'] = None
@@ -236,26 +237,30 @@ def PerformKanojoMovieUpdate(metadata_id, lang, existing_metadata):
     metadata['roles'] = list()
 
     try:
-        for member in kanojo_dict.get('cast') or list():
+        for member in kanojo_dict.get('roles') or list():
             try:
                 role = dict()
                 # Since models basically always play themselves, we'll use their age as the role.
-                role['role'] = member['age_text']
-                role['name'] = member['name']
-                if member['profile_path'] is not None:
-                    role['photo'] = member['profile_path']
+                # role['role'] = member['age_text']
+                if lang == Locale.Language.English:
+                    role['name'] = member['name']
+                else:
+                    role['name'] = member['original_name']
+
+                #if member['profile_path'] is not None:
+                #    role['photo'] = member['profile_path']
                 metadata['roles'].append(role)
             except:
                 pass
     except:
         pass
 
-    metadata['posters'] = dict()
-    metadata['posters'][kanojo_dict['poster_path']] = Proxy.Media(HTTP.Request(kanojo_dict['poster_path']).content)
+    #metadata['posters'] = dict()
+    #metadata['posters'][kanojo_dict['poster_path']] = Proxy.Media(HTTP.Request(kanojo_dict['poster_path']).content)
 
     # Backdrops.
-    metadata['art'] = dict()
-    metadata['art'][kanojo_dict['backdrop_path']] = Proxy.Media(HTTP.Request(kanojo_dict['backdrop_path']).content)
+    #metadata['art'] = dict()
+    #metadata['art'][kanojo_dict['backdrop_path']] = Proxy.Media(HTTP.Request(kanojo_dict['backdrop_path']).content)
 
     return metadata
 
@@ -265,7 +270,7 @@ def PerformKanojoMovieUpdate(metadata_id, lang, existing_metadata):
 class KanojoAgent(Agent.Movies):
 
     name = 'Kanojo'
-    languages = [Locale.Language.Japanese]
+    languages = [Locale.Language.English, Locale.Language.Japanese]
     primary_provider = True
     accepts_from = ['com.plexapp.agents.localmedia']
 
