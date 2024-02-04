@@ -255,12 +255,12 @@ def PerformKanojoMovieUpdate(metadata_id, lang, existing_metadata):
     except:
         pass
 
-    #metadata['posters'] = dict()
-    #metadata['posters'][kanojo_dict['poster_path']] = Proxy.Media(HTTP.Request(kanojo_dict['poster_path']).content)
+    metadata['posters'] = dict()
+    metadata['posters'][kanojo_dict['thumb_url']] = Proxy.Media(HTTP.Request(kanojo_dict['thumb_url']).content)
 
     # Backdrops.
-    #metadata['art'] = dict()
-    #metadata['art'][kanojo_dict['backdrop_path']] = Proxy.Media(HTTP.Request(kanojo_dict['backdrop_path']).content)
+    metadata['art'] = dict()
+    metadata['art'][kanojo_dict['art_url']] = Proxy.Media(HTTP.Request(kanojo_dict['art_url']).content)
 
     return metadata
 
