@@ -167,7 +167,6 @@ def PerformKanojoMovieSearch(results, media, lang):
 
 
 def PerformKanojoMovieUpdate(metadata_id, lang, existing_metadata):
-
     metadata = dict(id=metadata_id)
 
     kanojo_dict = GetKanojoJSON(url=KANOJO_MOVIE % (metadata_id))
@@ -240,18 +239,21 @@ def PerformKanojoMovieUpdate(metadata_id, lang, existing_metadata):
         for member in kanojo_dict.get('roles') or list():
             try:
                 role = dict()
-                # Since models basically always play themselves, we'll use their age as the role.
-                role['role'] = member['age_string'] if member['age_string'] else None
                 if lang == Locale.Language.English:
                     role['name'] = member['name']
                 else:
                     role['name'] = member['original_name']
 
+                # Since models basically always play themselves, we'll use their age as the role.
+                # If member has an age_string, use that as the role.
+                if 'age_string' in member and member['age_string'] is not None and member['age_string'] != '':
+                    role['role'] = member['age_string']
+
                 #if member['profile_path'] is not None:
                 #    role['photo'] = member['profile_path']
                 metadata['roles'].append(role)
-            except:
-                pass
+            except Exception as e:
+                Log(e)
     except:
         pass
 
