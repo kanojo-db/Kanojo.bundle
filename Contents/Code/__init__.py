@@ -241,7 +241,7 @@ def PerformKanojoMovieUpdate(metadata_id, lang, existing_metadata):
             try:
                 role = dict()
                 # Since models basically always play themselves, we'll use their age as the role.
-                # role['role'] = member['age_text']
+                role['role'] = member['age_string'] if member['age_string'] else None
                 if lang == Locale.Language.English:
                     role['name'] = member['name']
                 else:
