@@ -185,49 +185,44 @@ def PerformKanojoMovieUpdate(metadata_id, lang, existing_metadata):
 
     dvd_code = kanojo_dict.get('dvd_id')
 
-    # Title of the film.
-    if lang == Locale.Language.English:
-        # Title is [DVD Code] Title
-        metadata['title'] = '[%s] %s' % (dvd_code, kanojo_dict['title'])
+    # If there is a title, use that, otherwise use the original title.
+    if 'title' in kanojo_dict and kanojo_dict['title'] is not None and kanojo_dict['title'] != '':
+        metadata['title'] = kanojo_dict['title']
     else:
-        metadata['title'] = '[%s] %s' % (dvd_code, kanojo_dict['original_title'])
+        metadata['title'] = kanojo_dict['original_title']
 
     if 'original_title' in kanojo_dict and kanojo_dict['original_title'] != metadata['title']:
         metadata['original_title'] = kanojo_dict['original_title']
 
     # Release date.
-    try:
+    if 'release_date' in kanojo_dict and kanojo_dict['release_date']:
         metadata['originally_available_at'] = kanojo_dict['release_date']
         metadata['year'] = Datetime.ParseDate(
             kanojo_dict['release_date']).date().year
-    except:
-        pass
 
-    # Runtime.
-    try:
+    # If runtime is available, is a number, and is greater than 0, set the duration.
+    if 'runtime' in kanojo_dict and kanojo_dict['runtime'] is not None and int(kanojo_dict['runtime']) > 0:
         metadata['duration'] = int(kanojo_dict['runtime']) * 60 * 1000
-    except:
-        pass
 
     # Genres.
     # metadata['genres'] = []
     # for genre in (kanojo_dict.get('genres') or list()):
     #    metadata['genres'].append(genre.get('name', '').strip())
 
-    # Collections.
     #metadata['collections'] = []
-    #if Prefs['collections'] and 'belongs_to_series' in kanojo_dict and kanojo_dict['belongs_to_series'] != None:
-    #    metadata['collections'].append(kanojo_dict['belongs_to_series'])
+    if 'series' in kanojo_dict and kanojo_dict['series'] != None:
+        # Check if there is a translation available, if not, use the original name.
+        if kanojo_dict['series']['name'] is not None and kanojo_dict['series']['name'] != '':
+            metadata['collections'] = [kanojo_dict['series']['name']]
+        else:
+            metadata['collections'] = [kanojo_dict['series']['original_name']]
 
     # Studio.
-    if 'studio' in kanojo_dict:
-        if lang == Locale.Language.English:
+    if 'studio' in kanojo_dict and kanojo_dict['studio'] is not None:
+        if 'name' in kanojo_dict['studio'] and kanojo_dict['studio']['name'] is not None and kanojo_dict['studio']['name'] != '':
             metadata['studio'] = kanojo_dict['studio']['name']
         else:
             metadata['studio'] = kanojo_dict['studio']['original_name']
-
-    else:
-        metadata['studio'] = None
 
     # Country.
     metadata['countries'] = ['Japan']
@@ -235,11 +230,10 @@ def PerformKanojoMovieUpdate(metadata_id, lang, existing_metadata):
     # Cast.
     metadata['roles'] = list()
 
-    try:
+    if 'roles' in kanojo_dict and kanojo_dict['roles'] is not None:
         for member in kanojo_dict.get('roles') or list():
-            try:
                 role = dict()
-                if lang == Locale.Language.English:
+                if 'name' in member and member['name'] is not None and member['name'] != '':
                     role['name'] = member['name']
                 else:
                     role['name'] = member['original_name']
@@ -249,20 +243,19 @@ def PerformKanojoMovieUpdate(metadata_id, lang, existing_metadata):
                 if 'age_string' in member and member['age_string'] is not None and member['age_string'] != '':
                     role['role'] = member['age_string']
 
-                #if member['profile_path'] is not None:
-                #    role['photo'] = member['profile_path']
+                if 'profile_url' in member and member['profile_url'] is not None:
+                    role['photo'] = member['profile_url']
+                
                 metadata['roles'].append(role)
-            except Exception as e:
-                Log(e)
-    except:
-        pass
 
     metadata['posters'] = dict()
-    metadata['posters'][kanojo_dict['thumb_url']] = Proxy.Media(HTTP.Request(kanojo_dict['thumb_url']).content)
+    if 'thumb_url' in kanojo_dict and kanojo_dict['thumb_url'] is not None:
+        metadata['posters'][kanojo_dict['thumb_url']] = Proxy.Media(HTTP.Request(kanojo_dict['thumb_url']).content)
 
     # Backdrops.
     metadata['art'] = dict()
-    metadata['art'][kanojo_dict['art_url']] = Proxy.Media(HTTP.Request(kanojo_dict['art_url']).content)
+    if 'art_url' in kanojo_dict and kanojo_dict['art_url'] is not None:
+        metadata['art'][kanojo_dict['art_url']] = Proxy.Media(HTTP.Request(kanojo_dict['art_url']).content)
 
     return metadata
 
