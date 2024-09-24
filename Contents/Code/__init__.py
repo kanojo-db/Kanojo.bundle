@@ -187,9 +187,10 @@ def PerformKanojoMovieUpdate(metadata_id, lang, existing_metadata):
 
     # If there is a title, use that, otherwise use the original title.
     if 'title' in kanojo_dict and kanojo_dict['title'] is not None and kanojo_dict['title'] != '':
-        metadata['title'] = kanojo_dict['title']
+        # Titles should be as follows: [DVD Code] Title
+        metadata['title'] = "[{0}] {1}".format(dvd_code, kanojo_dict['title'])
     else:
-        metadata['title'] = kanojo_dict['original_title']
+        metadata['title'] = "[{0}] {1}".format(dvd_code, kanojo_dict['original_title'])
 
     if 'original_title' in kanojo_dict and kanojo_dict['original_title'] != metadata['title']:
         metadata['original_title'] = kanojo_dict['original_title']
